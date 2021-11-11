@@ -166,7 +166,7 @@ struct Mesh : GeometricHexahedralMeshV3f
 	}
 
 	// check for and avoid duplicates
-	VertexHandle add_vertex(Vec3f& point) {
+	VertexHandle add_vertex(const Vec3f& point) {
 		for (auto v : vertices() ) {
 			if (point == vertex(v)) {
 				return v;
