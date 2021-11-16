@@ -197,6 +197,7 @@ filesystem::path basename = "out"
 	return approx_ratio;
 }
 
+#ifndef __EMSCRIPTEN__
 int main(int argc, char** argv)
 {
 	timer<high_resolution_clock> total_time;
@@ -448,3 +449,8 @@ int main(int argc, char** argv)
 
 	return EXIT_SUCCESS;
 }
+#else
+int main(int argc, char** argv) {
+	return EXIT_SUCCESS;
+}
+#endif

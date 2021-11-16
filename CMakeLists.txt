@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.16.0 FATAL_ERROR)
 
 set(CMAKE_SYSTEM_VERSION 10.0 CACHE STRING "" FORCE)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 project(wsp3dovm CXX)
+
+include(FetchContent)
+FetchContent_Declare(OVM GIT_REPOSITORY "https://www.graphics.rwth-aachen.de:9000/OpenVolumeMesh/OpenVolumeMesh.git" GIT_SUBMODULES_RECURSE ON)
+FetchContent_MakeAvailable(OVM)
 
 ################################################################################
 # Set target arch type if empty. Visual studio solution generator provides it.

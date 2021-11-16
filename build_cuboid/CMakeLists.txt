@@ -31,7 +31,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 # Include directories
 ################################################################################
 target_include_directories(${PROJECT_NAME} PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/home/derek/projects/wsp3dovm/OpenVolumeMesh/install/include"
+    "${CMAKE_SOURCE_DIR}/_deps/ovm-src/src"
+    "${CMAKE_SOURCE_DIR}/_deps/ovm-build/src"
 )
 
 ################################################################################
@@ -99,23 +100,12 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
-add_library(OpenVolumeMesh SHARED IMPORTED)
-set_target_properties(OpenVolumeMesh PROPERTIES IMPORTED_LOCATION "/usr/local/lib/libOpenVolumeMesh.so")
+if(EMSCRIPTEN)
+    set_target_properties(OpenVolumeMesh PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/_deps/ovm-build/src/libOpenVolumeMesh.a")
+else()
+    set_target_properties(OpenVolumeMesh PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/_deps/ovm-build/src/libOpenVolumeMesh.so")
+endif()
 set(ADDITIONAL_LIBRARY_DEPENDENCIES
-    "$<$<CONFIG:Debug>:"
-        "OpenVolumeMeshd"
-    ">"
-    "$<$<CONFIG:Release>:"
-        "OpenVolumeMesh"
-    ">"
-    "$<$<CONFIG:RelWithDebInfo>:"
-        "OpenVolumeMesh"
-    ">"
     OpenVolumeMesh
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
-
-target_link_directories(${PROJECT_NAME} PRIVATE
-    "${CMAKE_SOURCE_DIR}//OpenVolumeMesh/install/lib"
-)
-

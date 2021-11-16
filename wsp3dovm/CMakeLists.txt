@@ -65,11 +65,14 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 ################################################################################
 # Include directories
 ################################################################################
-find_package(Boost 1.70 COMPONENTS filesystem program_options chrono REQUIRED)
+if(NOT EMSCRPITEN)
+    find_package(Boost 1.70 COMPONENTS filesystem program_options chrono REQUIRED)
 
-target_include_directories(${PROJECT_NAME} PUBLIC
-    "${BOOST_INCLUDE_DIRS}"
-)
+    target_include_directories(${PROJECT_NAME} PUBLIC
+        "${Boost_INCLUDE_DIR}"
+    )
+endif()
+set(Boost_USE_STATIC_LIBS ON)
 
 ################################################################################
 # Compile definitions
@@ -140,27 +143,23 @@ endif()
 ################################################################################
 # Dependencies
 ################################################################################
-add_library(OpenVolumeMesh SHARED IMPORTED)
-set_target_properties(OpenVolumeMesh PROPERTIES IMPORTED_LOCATION "/usr/local/lib/libOpenVolumeMesh.so")
-set(ADDITIONAL_LIBRARY_DEPENDENCIES
-    "$<$<CONFIG:Debug>:"
-        "OpenVolumeMeshd"
-    ">"
-    "$<$<CONFIG:Release>:"
-        "OpenVolumeMesh"
-    ">"
-    "$<$<CONFIG:RelWithDebInfo>:"
-        "OpenVolumeMesh"
-    ">"
-    Boost::filesystem
-    Boost::program_options
-    Boost::chrono
-    OpenVolumeMesh
-)
-target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+if(EMSCRIPTEN)
+    set_target_properties(OpenVolumeMesh PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/_deps/ovm-build/src/libOpenVolumeMesh.a")
+    set(ADDITIONAL_LIBRARY_DEPENDENCIES
+        OpenVolumeMesh
+    )
+else()
+    set_target_properties(OpenVolumeMesh PROPERTIES IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/_deps/ovm-build/src/libOpenVolumeMesh.so")
+    set(ADDITIONAL_LIBRARY_DEPENDENCIES
+        Boost::filesystem
+        Boost::program_options
+        Boost::chrono
+        OpenVolumeMesh
+    )
+endif()
 
-target_link_directories(${PROJECT_NAME} PRIVATE
-    "${CMAKE_SOURCE_DIR}//OpenVolumeMesh/install/lib;"
-    "C:/local/boost_1_70_0/lib64-msvc-14.2"
-)
+target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
+if(EMSCRIPTEN)
+    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-s USE_BOOST_HEADERS=1" LINK_FLAGS "-s USE_BOOST_HEADERS=1")
+endif()
 
