@@ -65,7 +65,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES MSVC_RUNTIME_LIBRARY ${MSVC_RUN
 ################################################################################
 # Include directories
 ################################################################################
-if(NOT EMSCRPITEN)
+if(NOT EMSCRIPTEN)
     find_package(Boost 1.70 COMPONENTS filesystem program_options chrono REQUIRED)
 
     target_include_directories(${PROJECT_NAME} PUBLIC
@@ -160,6 +160,6 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
 if(EMSCRIPTEN)
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-s USE_BOOST_HEADERS=1" LINK_FLAGS "-s USE_BOOST_HEADERS=1")
+    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-s USE_BOOST_HEADERS=1" LINK_FLAGS "-s USE_BOOST_HEADERS=1 -s EXPORT_ES6=1 -s MODULARIZE=1 -s --bind")
 endif()
 
