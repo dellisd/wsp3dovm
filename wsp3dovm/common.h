@@ -201,10 +201,10 @@ static inline double length(const Mesh& mesh, const Edge& e)
 static inline std::set<CellHandle> cells_from_graph_nodes
 (
 	const Graph& graph,
-	const Mesh &mesh,
+	const Mesh& mesh,
 	GraphNode_descriptor s,
 	GraphNode_descriptor t,
-	std::vector<GraphNode_descriptor>& predecessors
+	const std::vector<GraphNode_descriptor>& predecessors
 )
 {
 	std::set<CellHandle> cells;

@@ -16,6 +16,7 @@ set(Header_Files
     "statistics.h"
     "write_tet.h"
     "write_vtk.h"
+    "wasm.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
@@ -26,6 +27,7 @@ set(Source_Files
     "statistics.cpp"
     "write_tet.cpp"
     "write_vtk.cpp"
+    "wasm.cpp"
 )
 source_group("Source Files" FILES ${Source_Files})
 
@@ -160,6 +162,6 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PRIVATE "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
 if(EMSCRIPTEN)
-    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-s USE_BOOST_HEADERS=1" LINK_FLAGS "-s USE_BOOST_HEADERS=1 -s EXPORT_ES6=1 -s MODULARIZE=1 -s --bind")
+    set_target_properties(${PROJECT_NAME} PROPERTIES COMPILE_FLAGS "-s USE_BOOST_HEADERS=1" LINK_FLAGS "-s USE_BOOST_HEADERS=1 -s EXPORT_ES6=1 -s MODULARIZE=1 --bind")
 endif()
 

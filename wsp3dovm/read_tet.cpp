@@ -18,7 +18,7 @@ int first_facet_number = 0;
 int first_tetra_number = 0;
 
 // make nodes from point input, add them to mesh and keep 0-based indices in vector
-void read_nodes( MeshGenerator &meshGenerator, std::string filename)
+void read_nodes(MeshGenerator &meshGenerator, std::istream& input)
 {
 	int number_of_nodes;
 	int dimension;
@@ -26,16 +26,10 @@ void read_nodes( MeshGenerator &meshGenerator, std::string filename)
 	bool has_boundary_marker;
 
 	// file format see http://tetgen.berlios.de/fformats.node.html
-	std::ifstream node_file(filename);
-	if (!node_file.is_open())
-	{
-		std::cerr << "read_tet: failed to open .node file \"" << filename << "\", exit" << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	node_file >> number_of_nodes >> dimension >> number_of_attributes >> has_boundary_marker;
+	input >> number_of_nodes >> dimension >> number_of_attributes >> has_boundary_marker;
 	if (dimension != 3)
 	{
-		std::cerr << "read_tet: wrong dimension found in .node file \"" << filename << "\", exit" << std::endl;
+		std::cerr << "read_tet: wrong dimension found in node input, exiting" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	std::cout << "  reading " << number_of_nodes << " nodes..." << std::endl;
@@ -46,7 +40,7 @@ void read_nodes( MeshGenerator &meshGenerator, std::string filename)
 		double y;
 		double z;
 
-		if (!(node_file >> j >> x >> y >> z))
+		if (!(input >> j >> x >> y >> z))
 		{
 			std::cerr << "read_tet: failed to read node " << i << std::endl;
 			exit(EXIT_FAILURE);
@@ -67,30 +61,22 @@ void read_nodes( MeshGenerator &meshGenerator, std::string filename)
 
 		// attributes, ignored
 		for (int k = 0; k < number_of_attributes; ++ k) 
-			node_file >> j;
+			input >> j;
 
 		// boundary_marker, ignored
 		if (has_boundary_marker)
-			node_file >> j;
+			input >> j;
 	}
-
-	node_file.close();
 }
 
-void read_tetras( MeshGenerator &meshGenerator, std::string filename)
+void read_tetras( MeshGenerator &meshGenerator, std::istream& input)
 {
 	int number_of_tetras;
 	int number_of_points;
 	bool has_boundary_marker;
 
 	// file format see 
-	std::ifstream tetra_file(filename);
-	if (!tetra_file.is_open())
-	{
-		std::cerr << "read_tet: failed to open .ele file \"" << filename << "\", exit" << std::endl;
-		exit(EXIT_FAILURE);
-	}
-	tetra_file >> number_of_tetras >> number_of_points >> has_boundary_marker;
+	input >> number_of_tetras >> number_of_points >> has_boundary_marker;
 	if (number_of_points != 4)
 	{
 		std::cerr << "number of points 4 expected, found " << number_of_points << ", exit" << std::endl;
@@ -104,7 +90,7 @@ void read_tetras( MeshGenerator &meshGenerator, std::string filename)
 		int v;
 		int w;
 		int x;
-		if (!(tetra_file >> j >> u >> v >> w >> x))
+		if (!(input >> j >> u >> v >> w >> x))
 		{
 			std::cerr << "failed to read tetra " << i << std::endl;
 			exit(EXIT_FAILURE);
@@ -133,7 +119,7 @@ void read_tetras( MeshGenerator &meshGenerator, std::string filename)
 		double weight;
 		if (has_boundary_marker)
 		{
-			tetra_file >> weight;
+			input >> weight;
 		}
 		else
 		{
@@ -141,7 +127,6 @@ void read_tetras( MeshGenerator &meshGenerator, std::string filename)
 		}
 		meshGenerator.mesh()._cellWeight.push_back(weight);
 	}
-	tetra_file.close();
 }
 
 void read_tet(Mesh &mesh, std::string filename)
@@ -151,9 +136,30 @@ void read_tet(Mesh &mesh, std::string filename)
 	std::cout << "read_tet: slurping tetraheder soup from " << filename << " ..." << std::endl;
 	MeshGenerator generator(mesh);
 
+	std::ifstream node_file(input_pathname.string() + ".node");
+	if (!node_file.is_open())
+	{
+		std::cerr << "read_tet: failed to open .node file \"" << filename << "\", exit" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	std::ifstream tetra_file(input_pathname.string() + ".ele");
+	if (!tetra_file.is_open())
+	{
+		std::cerr << "read_tet: failed to open .ele file \"" << filename << "\", exit" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+
+	read_tet(mesh, node_file, tetra_file);
+}
+
+void read_tet(Mesh& mesh, std::istream& node, std::istream& ele)
+{
+	MeshGenerator generator(mesh);
+
 	// all nodes
 	std::cout << "  read_nodes..." << std::endl;
-	read_nodes(generator, input_pathname.string() + ".node");
+	read_nodes(generator, node);
 
 	// these are only the boundary edges
 	// read_edges ( edges, "C:/Carleton/CGAL-4.4/demo/Polyhedron/data/ellipsoid.1.edge");
@@ -171,7 +177,7 @@ void read_tet(Mesh &mesh, std::string filename)
 	mesh.enable_vertex_bottom_up_incidences(true);
 
 	std::cout << "  read_tetras..." << std::endl;
-	read_tetras(generator, input_pathname.string() + ".ele");
+	read_tetras(generator, ele);
 
 	// now we can free some memory which is needed for other data structures:
 	// this caused to performance penalty (tested on NewFineMesh.1 -p)

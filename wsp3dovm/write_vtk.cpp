@@ -2,11 +2,11 @@
 
 void write_shortest_path_tree_vtk
 (
-	const Graph &graph,
+	const Graph& graph,
 	GraphNode_descriptor s,
-	std::vector<GraphNode_descriptor>& predecessors,
-	std::vector<double>& distances,
-	std::string filename
+	const std::vector<GraphNode_descriptor>& predecessors,
+	const std::vector<double>& distances,
+	const std::string& filename
 )
 {
 	std::ofstream file(filename, std::ios::trunc);
@@ -16,14 +16,26 @@ void write_shortest_path_tree_vtk
 		return;
 	}
 
+	write_shortest_path_tree_vtk(graph, s, predecessors, distances, file);
+}
+
+void write_shortest_path_tree_vtk
+(
+	const Graph& graph,
+	GraphNode_descriptor s,
+	const std::vector<GraphNode_descriptor>& predecessors,
+	const std::vector<double>& distances,
+	std::ostream& output
+)
+{
 	size_t n = boost::num_vertices(graph);
 
-	file <<
+	output <<
 		"# vtk DataFile Version 2.0\n"
 		"shortest paths tree with root node " << graph[s].vh.idx() << "\n"
 		"ASCII\n"
 		"DATASET UNSTRUCTURED_GRID\n";
-	file << "POINTS " << n << " double\n";
+	output << "POINTS " << n << " double\n";
 
 	std::vector<int> id(num_vertices(graph));
 	int i = 0;
@@ -32,25 +44,25 @@ void write_shortest_path_tree_vtk
 	{
 		GraphNode_descriptor v = *vertexIt;
 		id[v] = i++;
-		file << graph[v].point << "\n";
+		output << graph[v].point << "\n";
 	}
 
-	file << "CELLS " << n << " " << 3 * n << "\n";
+	output << "CELLS " << n << " " << 3 * n << "\n";
 	for (boost::tie(vertexIt, vertexEnd) = boost::vertices(graph); vertexIt != vertexEnd; ++vertexIt)
 	{
 		GraphNode_descriptor u = *vertexIt;
 		GraphNode_descriptor v = predecessors[u];
-		file << "2 " << id[u] << " " << id[v] << "\n";
+		output << "2 " << id[u] << " " << id[v] << "\n";
 	}
 
-	file << "CELL_TYPES " << n << "\n";
+	output << "CELL_TYPES " << n << "\n";
 	for (size_t i = 0; i < n; ++i)
 	{
 		// vtk cell type 3 is line
-		file << "3" "\n";
+		output << "3" "\n";
 	}
 
-	file
+	output
 		<< "POINT_DATA " << n << "\n"
 		<< "SCALARS distance double 1\n"
 		<< "LOOKUP_TABLE default\n";
@@ -61,19 +73,19 @@ void write_shortest_path_tree_vtk
 		double distance = distances[u];
 		if (isfinite(distance))
 		{
-			file << distance << "\n";
+			output << distance << "\n";
 		}
 		else
 		{
 			// ParaView cannot handle 1.#INF or the like in the .vtk file
 			// but we keep the value distinguishable from a normal 0
-			file << "-0\n";
+			output << "-0\n";
 		}
 	}
-	file << "\n";
+	output << "\n";
 }
 
-int hops(std::vector<GraphNode_descriptor> &predecessors, GraphNode_descriptor s, GraphNode_descriptor t)
+int hops(const std::vector<GraphNode_descriptor> &predecessors, GraphNode_descriptor s, GraphNode_descriptor t)
 {
 	int h = 0;
 	while (s != t)
@@ -86,12 +98,12 @@ int hops(std::vector<GraphNode_descriptor> &predecessors, GraphNode_descriptor s
 
 void write_shortest_path_from_to_vtk
 (
-	const Graph &graph,
+	const Graph& graph,
 	GraphNode_descriptor s, 
 	GraphNode_descriptor t,
-	std::vector<GraphNode_descriptor>& predecessors,
-	std::vector<double>& distances,
-	std::string filename
+	const std::vector<GraphNode_descriptor>& predecessors,
+	const std::vector<double>& distances,
+	const std::string& filename
 )
 {
 	if (distances[t] == std::numeric_limits<double>::infinity())
@@ -115,14 +127,41 @@ void write_shortest_path_from_to_vtk
 		return;
 	}
 
+	write_shortest_path_from_to_vtk(graph, s, t, predecessors, distances, file);
+}
+
+void write_shortest_path_from_to_vtk
+(
+	const Graph& graph,
+	GraphNode_descriptor s, 
+	GraphNode_descriptor t,
+	const std::vector<GraphNode_descriptor>& predecessors,
+	const std::vector<double>& distances,
+	std::ostream& output
+)
+{
+	if (distances[t] == std::numeric_limits<double>::infinity())
+	{
+		std::cout << "write_shortest_path_from_to_vtk: target node unreachable" << std::endl;
+	}
+
+	int h = hops(predecessors, s, t);
+
+	std::cout 
+	<< "from s=" << graph[s].vh.idx() 
+	<< " to t=" << graph[t].vh.idx() 
+	<< " distance=" << distances[t]
+	<< " #hops = " << h 
+	<< std::endl;
+
 	size_t n = boost::num_vertices(graph);
 
-	file <<
+	output <<
 		"# vtk DataFile Version 2.0\n"
 		"shortest path from " << graph[s].vh.idx() << " to " << graph[t].vh.idx() << "\n"
 		"ASCII\n"
 		"DATASET UNSTRUCTURED_GRID\n";
-	file << "POINTS " << n << " double\n";
+	output << "POINTS " << n << " double\n";
 
 	std::vector<int> id(num_vertices(graph));
 	int i = 0;
@@ -131,24 +170,24 @@ void write_shortest_path_from_to_vtk
 	{
 		GraphNode_descriptor u = *vertexIt;
 		id[u] = i++;
-		file << graph[u].point << "\n";
+		output << graph[u].point << "\n";
 	}
 
-	file << "CELLS " << h << " " << 3 * h << "\n";
+	output << "CELLS " << h << " " << 3 * h << "\n";
 	for (GraphNode_descriptor r = t; r != s; r = predecessors[r])
 	{
 		GraphNode_descriptor v = predecessors[r];
-		file << "2 " << id[r] << " " << id[v] << "\n";
+		output << "2 " << id[r] << " " << id[v] << "\n";
 	}
 
-	file << "CELL_TYPES " << h << "\n";
+	output << "CELL_TYPES " << h << "\n";
 	for (int i = 0; i < h; ++i)
 	{
 		// vtk cell type 3 is line
-		file << "3" "\n";
+		output << "3" "\n";
 	}
 
-	file
+	output
 		<< "POINT_DATA " << n << "\n"
 		<< "SCALARS distance double 1\n"
 		<< "LOOKUP_TABLE default\n";
@@ -159,19 +198,19 @@ void write_shortest_path_from_to_vtk
 		double distance = distances[u];
 		if (isfinite(distance))
 		{
-			file << distance << "\n";
+			output << distance << "\n";
 		}
 		else
 		{
 			// ParaView cannot handle 1.#INF or the like in the .vtk file
 			// but we keep the value distinguishable from a normal 0
-			file << "-0\n";
+			output << "-0\n";
 		}
 	}
-	file << "\n";
+	output << "\n";
 }
 
-void write_vtk(const Mesh &mesh, std::string filename)
+void write_vtk(const Mesh& mesh, const std::string& filename)
 {
 	std::cout << "write_vtk " << filename << std::endl;
 	std::ofstream file(filename, std::ios::trunc);
@@ -180,16 +219,22 @@ void write_vtk(const Mesh &mesh, std::string filename)
 		std::cerr << "failed to open file " << filename << std::endl;
 		return;
 	}
+	
+	write_vtk(mesh, file);
+	file.close();
+}
 
+void write_vtk(const Mesh& mesh, std::ostream& output)
+{
 	int number_of_vertices = mesh.n_vertices();
 
-	file <<
+	output <<
 		"# vtk DataFile Version 2.0\n"
 		"tetrahedralization\n"
 		"ASCII\n"
 		"DATASET UNSTRUCTURED_GRID\n";
 
-	file << "POINTS " << number_of_vertices << " double\n";
+	output << "POINTS " << number_of_vertices << " double\n";
 
 	std::map<VertexHandle, int> V;
 	int inum = 0;
@@ -201,7 +246,7 @@ void write_vtk(const Mesh &mesh, std::string filename)
 	{
 		Point point = mesh.vertex(*vit);
 
-		file
+		output
 			<< point[0] << " "
 			<< point[1] << " "
 			<< point[2] << " "
@@ -213,7 +258,7 @@ void write_vtk(const Mesh &mesh, std::string filename)
 	int number_of_cells = mesh.n_cells();
 
 	// for each cell 5 values are given: numPoints (4) and the 4 vertex indices
-	file << "CELLS " << number_of_cells << " " << 5 * number_of_cells << "\n";
+	output << "CELLS " << number_of_cells << " " << 5 * number_of_cells << "\n";
 
 	for (
 		auto cit = mesh.cells_begin(), end = mesh.cells_end();
@@ -222,21 +267,21 @@ void write_vtk(const Mesh &mesh, std::string filename)
 	{
 		CellHandle ch = *cit;
 
-		file << "4 ";
+		output << "4 ";
 		for (auto vit = mesh.cv_iter(ch); vit; ++vit)
-			file << vit->idx() << " ";
+			output << vit->idx() << " ";
 		
-		file << "\n";
+		output << "\n";
 	}
 
-	file << "CELL_TYPES " << number_of_cells << "\n";
+	output << "CELL_TYPES " << number_of_cells << "\n";
 	for (int i = 0; i < number_of_cells; ++i)
 	{
 		// vtk cell type 10 is tetrahedron
-		file << "10" "\n";
+		output << "10" "\n";
 	}
 
-	file
+	output
 		<< "CELL_DATA " << number_of_cells << "\n"
 		<< "SCALARS weight double 1\n"
 		<< "LOOKUP_TABLE default\n";
@@ -246,17 +291,15 @@ void write_vtk(const Mesh &mesh, std::string filename)
 		cit != end;
 	++cit)
 	{
-		file << mesh.weight(*cit);
-		file << "\n";
+		output << mesh.weight(*cit);
+		output << "\n";
 	}
-
-	file.close();
 }
 
 void write_graph_vtk
 (
-const Graph &graph,
-std::string filename
+	const Graph &graph,
+	std::string filename
 )
 {
 	std::ofstream file(filename, std::ios::trunc);
@@ -266,12 +309,21 @@ std::string filename
 		return;
 	}
 
-	file <<
+	write_graph_vtk(graph, file);
+}
+
+void write_graph_vtk
+(
+	const Graph& graph,
+	std::ostream& output
+)
+{
+	output <<
 		"# vtk DataFile Version 2.0\n"
 		"steiner graph\n"
 		"ASCII\n"
 		"DATASET UNSTRUCTURED_GRID\n";
-	file << "POINTS " << num_vertices(graph) << " double\n";
+	output << "POINTS " << num_vertices(graph) << " double\n";
 
 	std::vector<int> id(num_vertices(graph));
 	int i = 0;
@@ -281,26 +333,26 @@ std::string filename
 	{
 		GraphNode_descriptor u = *vertexIt;
 		id[u] = i++;
-		file << graph[u].point << "\n";
+		output << graph[u].point << "\n";
 	}
 
-	file << "CELLS " << num_edges(graph) << " " << 3 * num_edges(graph) << "\n";
+	output << "CELLS " << num_edges(graph) << " " << 3 * num_edges(graph) << "\n";
 	for (auto e : graph.m_edges)
 	{
 		GraphNode_descriptor u = e.m_source;
 		GraphNode_descriptor v = e.m_target;
-		file << "2 " << id[u] << " " << id[v] << "\n";
+		output << "2 " << id[u] << " " << id[v] << "\n";
 	}
 
-	file << "CELL_TYPES " << num_edges(graph) << "\n";
+	output << "CELL_TYPES " << num_edges(graph) << "\n";
 	for (size_t i = 0; i < num_edges(graph); ++i)
 	{
 		// vtk cell type 3 is line
-		file << "3" "\n";
+		output << "3" "\n";
 	}
 
 	// dump weight (not cost!) of edges to check that the adjacent  fetures have been calculated correctly
-	file
+	output
 		<< "CELL_DATA " << num_edges(graph) << "\n"
 		<< "SCALARS edge_weight double 1\n"
 		<< "LOOKUP_TABLE default\n";
@@ -309,22 +361,41 @@ std::string filename
 	for (boost::tie(edgeIt, edgeEnd) = boost::edges(graph); edgeIt != edgeEnd; ++edgeIt)
 	{
 		GraphEdge_descriptor edge = *edgeIt;
-		file << graph[edge].weight << "\n";
+		output << graph[edge].weight << "\n";
 	}
-	file << "\n";
-
-	file.close();
+	output << "\n";
 }
 
 void write_shortest_path_cells_from_to_vtk
 (
-	const Graph &graph,
-	const Mesh &mesh,
+	const Graph& graph,
+	const Mesh& mesh,
 	GraphNode_descriptor s,
 	GraphNode_descriptor t,
-	std::vector<GraphNode_descriptor>& predecessors,
-	std::vector<double>& distances,
-	std::string filename
+	const std::vector<GraphNode_descriptor>& predecessors,
+	const std::vector<double>& distances,
+	const std::string& filename
+)
+{
+	std::ofstream file(filename, std::ios::trunc);
+	if (!file.is_open())
+	{
+		std::cerr << "failed to open file " << filename << std::endl;
+		return;
+	}
+
+	write_shortest_path_cells_from_to_vtk(graph, mesh, s, t, predecessors, distances, file);
+}
+
+void write_shortest_path_cells_from_to_vtk
+(
+	const Graph& graph,
+	const Mesh& mesh,
+	GraphNode_descriptor s,
+	GraphNode_descriptor t,
+	const std::vector<GraphNode_descriptor>& predecessors,
+	const std::vector<double>& distances,
+	std::ostream& output
 )
 {
 	if (distances[t] == std::numeric_limits<double>::infinity())
@@ -336,21 +407,14 @@ void write_shortest_path_cells_from_to_vtk
 
 	int h = hops(predecessors, s, t);
 
-	std::ofstream file(filename, std::ios::trunc);
-	if (!file.is_open())
-	{
-		std::cerr << "failed to open file " << filename << std::endl;
-		return;
-	}
-
 	size_t n = boost::num_vertices(graph);
 
-	file <<
+	output <<
 		"# vtk DataFile Version 2.0\n"
 		"cells along shortest path from " << graph[s].vh.idx() << " to " << graph[t].vh.idx() << "\n"
 		"ASCII\n"
 		"DATASET UNSTRUCTURED_GRID\n";
-	file << "POINTS " << n << " double\n";
+	output << "POINTS " << n << " double\n";
 
 	std::vector<int> id(num_vertices(graph));
 	int i = 0;
@@ -359,10 +423,10 @@ void write_shortest_path_cells_from_to_vtk
 	{
 		GraphNode_descriptor u = *vertexIt;
 		id[u] = i++;
-		file << graph[u].point << "\n";
+		output << graph[u].point << "\n";
 	}
 
-	file << "CELLS " << cells.size() << " " << 5 * cells.size() << "\n";
+	output << "CELLS " << cells.size() << " " << 5 * cells.size() << "\n";
 	for (
 		auto cit =cells.begin(), end = cells.end();
 		cit != end;
@@ -371,21 +435,21 @@ void write_shortest_path_cells_from_to_vtk
 	{
 		CellHandle ch = *cit;
 
-		file << "4 ";
+		output << "4 ";
 		for (auto vit = mesh.cv_iter(ch); vit; ++vit)
-			file << vit->idx() << " ";
+			output << vit->idx() << " ";
 
-		file << "\n";
+		output << "\n";
 	}
 
-	file << "CELL_TYPES " << cells.size() << "\n";
+	output << "CELL_TYPES " << cells.size() << "\n";
 	for (int i = 0; i < cells.size(); ++i)
 	{
 		// vtk cell type 10 is tetra
-		file << "10" "\n";
+		output << "10" "\n";
 	}
 
-	file
+	output
 		<< "CELL_DATA " << cells.size() << "\n"
 		<< "SCALARS cellweight double 1\n"
 		<< "LOOKUP_TABLE default\n";
@@ -397,6 +461,6 @@ void write_shortest_path_cells_from_to_vtk
 		)
 	{
 		CellHandle ch = *cit;
-		file << mesh.weight(ch) << "\n";
+		output << mesh.weight(ch) << "\n";
 	}
 }
