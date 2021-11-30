@@ -47,5 +47,7 @@ public:
     double get_approx_ratio() const { return approx_ratio; }
 };
 
+// Convert the .node and .ele files into VTK format
+std::string gen_vtk(std::string node, std::string ele);
 #endif // __EMSCRIPTEN__
 #endif // WASM_H

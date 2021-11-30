@@ -1,4 +1,6 @@
 #include "wasm.h"
+#include "read_tet.h"
+#include "write_vtk.h"
 
 #ifdef __EMSCRIPTEN__
 
@@ -30,6 +32,20 @@ WspResult::WspResult(std::string mesh_vtk,
       approx_ratio(approx_ratio) {
 }
 
+std::string gen_vtk(std::string node, std::string ele) {
+  Mesh mesh;
+
+  std::stringstream node_stream(node);
+  std::stringstream ele_stream(ele);
+
+  read_tet(mesh, node_stream, ele_stream);
+
+  std::ostringstream output;
+  write_vtk(mesh, output);
+
+  return output.str();
+}
+
 EMSCRIPTEN_BINDINGS(wsp3dovm_wasm) {
     emscripten::class_<Options>("Options")
         .constructor<int, int, int, double, double, bool>()
@@ -42,6 +58,8 @@ EMSCRIPTEN_BINDINGS(wsp3dovm_wasm) {
         .property("shortestPathTreeVtk", &WspResult::get_shortest_path_tree_vtk)
         .property("shortestPathFromToVtk", &WspResult::get_shortest_path_from_to_vtk)
         .property("shortestPathCellsFromToVtk", &WspResult::get_shortest_path_cells_from_to_vtk);
+
+    emscripten::function("genVtk", &gen_vtk);
 }
 
 #endif
