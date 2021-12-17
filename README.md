@@ -21,7 +21,7 @@ In the following, the common root folder for all code is C:\Users\Frank\Source
 Download and install Boost
 --------------------------
 Download the prebuilt Windows binaries (installer) boost_1_70_0-unsupported-msvc-14.2-64.exe from http://www.boost.org/
-(1´4.2 indicates the Visual Studio tools version) and install it to a new empty folder, C:\local\boost_1_70_0.
+(1ï¿½4.2 indicates the Visual Studio tools version) and install it to a new empty folder, C:\local\boost_1_70_0.
 
 
 Download, build and install OpenVolumeMesh
@@ -182,7 +182,7 @@ Download these files and use tetgen.exe to create a tetrahedralization:
 
 The commandline parameters  
 * specify the input as an boundary description (surface mesh) of a 3D piecewise linear complex (-p)
-* request a maximum radius/edge ratio bound of 1.4 and a minimum dihedral angle bound of 18° (-q1.4/18) and
+* request a maximum radius/edge ratio bound of 1.4 and a minimum dihedral angle bound of 18ï¿½ (-q1.4/18) and
 * print a mesh quality report (-V)
 
 Consult the tetgen manual by Hang Si for details: http://wias-berlin.de/software/tetgen/1.5/doc/manual/index.html
@@ -233,3 +233,53 @@ The output should look like
 showing how the approximation improves when the yardstick decreases.
 
 It could be favorable to either switch to Linux or use cygwin under Windows. This would allow bash scripts and more powerful tools like grep, awk, perl etc.. to extract statistics data.
+
+# Compiling for Linux
+
+wsp3dovm can be built for linux using CMake. 
+The correct version of Boost must first be installed. OpenVolumeMesh will be downloaded and compiled automatically by CMake.
+The following commands will build the wsp3dovm executable.
+
+```bash
+cmake .
+make
+```
+
+
+# Compiling for WebAssembly
+
+wsp3dovm can also be built to target WebAssembly using the Emscripten toolchain.
+The [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) must first be installed.
+With the SDK on the path, the project can be built as follows:
+
+```
+emcmake cmake .
+emmake make
+```
+
+This will produce a `wsp3dovm.js` and `wsp3dovm.wasm` file which can be imported into a web project.
+
+Note: if you had previously built the project for Linux, you will need to delete the `CMakeCache.txt` file before running the `emcmake cmake .` command.
+
+## WASM Usage
+
+When built for WASM, the options are passed through an `Options` object, rather than through command line parameters.
+The resulting VTK data is returned in a `WspResult` object rather than written to the filesystem.
+
+See [`wasm.h`](wsp3dovm/wasm.h) for the bindings.
+
+```js
+import Module from "./wsp3dovm";
+
+const instance = new Module();
+
+export async function post(
+  node: string,
+  ele: string,
+  options: Module.Options
+): Promise<Module.WspResult> {
+  const worker: any = await instance;
+
+  return worker.wsp(options, node, ele) as Module.WspResult;
+}
+```
