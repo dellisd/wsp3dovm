@@ -483,7 +483,7 @@ int main(int argc, char** argv) {
 
 #include "wasm.h"
 
-WspResult do_thing(const Options& options, const std::string node_text, const std::string ele_text) {
+WspResult wsp(const Options& options, const std::string node_text, const std::string ele_text) {
     Mesh mesh;
 
     std::stringstream node(node_text);
@@ -656,7 +656,7 @@ WspResult do_thing(const Options& options, const std::string node_text, const st
 }
 
 EMSCRIPTEN_BINDINGS(wsp3dovm) {
-    emscripten::function("doThing", &do_thing);
+    emscripten::function("wsp", &wsp);
 }
 
 #endif
